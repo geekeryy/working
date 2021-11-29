@@ -15,16 +15,20 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
@@ -39,7 +43,109 @@ import (
 	// _ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
-type T struct {
+func main() {
+	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		log.Println("/")
+	})
+	http.HandleFunc("/github-event/account", AccountPush)
+	if err := http.ListenAndServe(":80", nil); err != nil {
+		log.Fatalln("err", err)
+	}
+
+}
+
+func AccountPush(writer http.ResponseWriter, request *http.Request) {
+	log.Println("POST /github-event/account")
+	all, err := ioutil.ReadAll(request.Body)
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+	log.Println(string(all))
+	defer request.Body.Close()
+	resp := GithubResp{}
+	if err := json.Unmarshal(all, &resp); err != nil {
+		log.Println(err.Error())
+		return
+	}
+	log.Println("/github-event/account",resp.Repository.Name,resp.HeadCommit.Message)
+	regex := regexp.MustCompile("^deploy:(v\\d{1,2}\\.\\d{1,2}\\.\\d{1,2})$")
+	submatch := regex.FindStringSubmatch(resp.HeadCommit.Message)
+	if len(submatch) != 2 {
+		log.Println("not a deploy request")
+		return
+	}
+	serviceName := strings.TrimPrefix(request.URL.Path, "/github-event/")
+	if resp.Repository.Name != serviceName {
+		log.Println("invalid servername:", resp.Repository.Name, serviceName)
+		return
+	}
+	tag := submatch[1]
+	image := fmt.Sprintf("ccr.ccs.tencentyun.com/comeonjy/%s:%s", serviceName, tag)
+	if err := RestartDeploy(serviceName, image); err != nil {
+		log.Println("RestartDeploy err", err.Error())
+		_ = PostFieShu("RestartDeploy err: " + err.Error())
+	}
+}
+
+func RestartDeploy(name string, image string) error {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		return err
+	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	log.Println("Updated deployment start...")
+	deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
+	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		result, getErr := deploymentsClient.Get(context.TODO(), name, metav1.GetOptions{})
+		if getErr != nil {
+			return err
+		}
+		result.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().String()
+		result.Spec.Template.Spec.Containers[0].Image = image
+		_, updateErr := deploymentsClient.Update(context.TODO(), result, metav1.UpdateOptions{})
+		return updateErr
+	})
+	if retryErr != nil {
+		return retryErr
+	}
+	log.Println("Updated deployment end...")
+
+	return nil
+}
+
+func PostFieShu(info string) error {
+	msg := FeiShuMsg{
+		MsgType: "text",
+	}
+	msg.Content.Text = fmt.Sprintf("admin-api-go [ %s ] : %s", os.Getenv("APP_ENV"), info)
+	marshal, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("POST", "https://open.feishu.cn/open-apis/bot/v2/hook/67c37caa-a7c2-44b3-8726-b784081c2102", bytes.NewReader(marshal))
+	if err != nil {
+		return err
+	}
+	_, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type FeiShuMsg struct {
+	MsgType string `json:"msg_type"`
+	Content struct {
+		Text string `json:"text"`
+	} `json:"content"`
+}
+
+type GithubResp struct {
 	Ref        string `json:"ref"`
 	Before     string `json:"before"`
 	After      string `json:"after"`
@@ -213,78 +319,3 @@ type T struct {
 		Modified []interface{} `json:"modified"`
 	} `json:"head_commit"`
 }
-
-func main() {
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		log.Println("/")
-	})
-	http.HandleFunc("/github-event/account", func(writer http.ResponseWriter, request *http.Request) {
-		log.Println("/github-event/account")
-		all, err := ioutil.ReadAll(request.Body)
-		if err != nil {
-			return
-		}
-		defer request.Body.Close()
-		log.Println(string(all))
-	})
-	if err:=http.ListenAndServe(":80", nil);err!=nil{
-		log.Fatalln("err",err)
-	}
-}
-
-func devops() {
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientset
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-	for {
-		// get pods in all the namespaces by omitting namespace
-		// Or specify namespace to get pods in particular namespace
-		pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
-		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
-
-		// Examples for error handling:
-		// - Use helper functions e.g. errors.IsNotFound()
-		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		_, err = clientset.CoreV1().Pods("default").Get(context.TODO(), "example-xxxxx", metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			fmt.Printf("Pod example-xxxxx not found in default namespace\n")
-		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Printf("Error getting pod %v\n", statusError.ErrStatus.Message)
-		} else if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Printf("Found example-xxxxx pod in default namespace\n")
-		}
-
-		deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			// Retrieve the latest version of Deployment before attempting update
-			// RetryOnConflict uses exponential backoff to avoid exhausting the apiserver
-			result, getErr := deploymentsClient.Get(context.TODO(), "account", metav1.GetOptions{})
-			if getErr != nil {
-				panic(fmt.Errorf("Failed to get latest version of Deployment: %v", getErr))
-			}
-			result.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().String()
-			result.Spec.Template.Spec.Containers[0].Image = "ccr.ccs.tencentyun.com/comeonjy/account:v0.0.1"
-			_, updateErr := deploymentsClient.Update(context.TODO(), result, metav1.UpdateOptions{})
-			return updateErr
-		})
-		if retryErr != nil {
-			panic(fmt.Errorf("Update failed: %v", retryErr))
-		}
-		fmt.Println("Updated deployment...")
-
-		time.Sleep(20 * time.Second)
-	}
-}
-func int32Ptr(i int32) *int32 { return &i }
