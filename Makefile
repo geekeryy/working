@@ -20,6 +20,7 @@ deploy:
 	echo "Aa123456" | docker login --username=1126254578 ccr.ccs.tencentyun.com --password-stdin
 	docker push ccr.ccs.tencentyun.com/comeonjy/$(SERVER_NAME):$(IMAGE_TAG)
 	git commit --allow-empty -am "deploy:$(IMAGE_TAG)"
+	git push
 
 # 重启服务
 restart:

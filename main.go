@@ -48,6 +48,7 @@ func main() {
 		log.Println("/")
 	})
 	http.HandleFunc("/github-event/account", AccountPush)
+	http.HandleFunc("/github-event/working", AccountPush)
 	if err := http.ListenAndServe(":80", nil); err != nil {
 		log.Fatalln("err", err)
 	}
