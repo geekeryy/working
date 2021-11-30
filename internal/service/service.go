@@ -26,7 +26,7 @@ type WorkingService struct {
 
 
 func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo data.WorkRepo) *WorkingService {
-	accountDial, err := grpc.Dial("account-grpc.jiangyang.me:8081", grpc.WithInsecure())
+	accountDial, err := grpc.Dial("account-grpc.jiangyang.me", grpc.WithInsecure())
 	if err != nil {
 		return nil
 	}
