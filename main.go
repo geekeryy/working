@@ -17,15 +17,19 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/md5"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -44,48 +48,61 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		log.Println("/")
+
+	r := mux.NewRouter()
+	r.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write([]byte("Hello!"))
 	})
-	http.HandleFunc("/github-event/account", AccountPush)
-	http.HandleFunc("/github-event/working", AccountPush)
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	r.HandleFunc("/github-event/{repo}", GithubEvent)
+
+	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatalln("err", err)
 	}
 
 }
-
-func AccountPush(writer http.ResponseWriter, request *http.Request) {
-	log.Println("POST /github-event/account")
+func hmacSha256(data []byte, secret string) string {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write(data)
+	return hex.EncodeToString(h.Sum(nil))
+}
+func GithubEvent(writer http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	repo := vars["repo"]
 	all, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		log.Println(err.Error())
 		return
 	}
 	log.Println(string(all))
+
+	if request.Header.Get("X-Hub-Signature-256")!="sha256="+hmacSha256(all,Md5(repo)){
+		log.Println("invalid Secret")
+		return
+	}
 	defer request.Body.Close()
 	resp := GithubResp{}
 	if err := json.Unmarshal(all, &resp); err != nil {
 		log.Println(err.Error())
 		return
 	}
-	log.Println("/github-event/account",resp.Repository.Name,resp.HeadCommit.Message)
-	regex := regexp.MustCompile("^deploy:(v\\d{1,2}\\.\\d{1,2}\\.\\d{1,2})$")
+	log.Println(resp.Repository.Name, resp.HeadCommit.Message)
+	regex := regexp.MustCompile("^deploy:(v\\d{1,2}\\.\\d{1,2}\\.\\d{1,2})")
 	submatch := regex.FindStringSubmatch(resp.HeadCommit.Message)
 	if len(submatch) != 2 {
 		log.Println("not a deploy request")
 		return
 	}
-	serviceName := strings.TrimPrefix(request.URL.Path, "/github-event/")
-	if resp.Repository.Name != serviceName {
-		log.Println("invalid servername:", resp.Repository.Name, serviceName)
+	if resp.Repository.Name != repo {
+		log.Println("invalid servername:", resp.Repository.Name, repo)
 		return
 	}
 	tag := submatch[1]
-	image := fmt.Sprintf("ccr.ccs.tencentyun.com/comeonjy/%s:%s", serviceName, tag)
-	if err := RestartDeploy(serviceName, image); err != nil {
+	image := fmt.Sprintf("ccr.ccs.tencentyun.com/comeonjy/%s:%s", repo, tag)
+	if err := RestartDeploy(repo, image); err != nil {
 		log.Println("RestartDeploy err", err.Error())
 		_ = PostFieShu("RestartDeploy err: " + err.Error())
+	} else {
+		_ = PostFieShu(fmt.Sprintf("RestartDeploy success: %s %s", repo, image))
 	}
 }
 
@@ -119,11 +136,17 @@ func RestartDeploy(name string, image string) error {
 	return nil
 }
 
+func Md5(str string) string  {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func PostFieShu(info string) error {
 	msg := FeiShuMsg{
 		MsgType: "text",
 	}
-	msg.Content.Text = fmt.Sprintf("admin-api-go [ %s ] : %s", os.Getenv("APP_ENV"), info)
+	msg.Content.Text = fmt.Sprintf("working [ %s ] : %s", os.Getenv("APP_ENV"), info)
 	marshal, err := json.Marshal(msg)
 	if err != nil {
 		return err
