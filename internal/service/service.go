@@ -4,8 +4,10 @@ import (
 	"context"
 
 	"github.com/google/wire"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
+	reloadconfig "github.com/comeonjy/go-kit/grpc/reloadconfig"
 	"github.com/comeonjy/go-kit/pkg/xlog"
 	v1 "github.com/comeonjy/working/api/v1"
 	"github.com/comeonjy/working/configs"
@@ -19,13 +21,22 @@ type WorkingService struct {
 	conf     configs.Interface
 	logger   *xlog.Logger
 	workRepo data.WorkRepo
+	rcAccountSvc reloadconfig.ReloadConfigClient
 }
 
+
 func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo data.WorkRepo) *WorkingService {
+	accountDial, err := grpc.Dial("account-grpc.jiangyang.me:8081", grpc.WithInsecure())
+	if err != nil {
+		return nil
+	}
+
+
 	return &WorkingService{
 		conf:     conf,
 		workRepo: workRepo,
 		logger:   logger,
+		rcAccountSvc: reloadconfig.NewReloadConfigClient(accountDial),
 	}
 }
 

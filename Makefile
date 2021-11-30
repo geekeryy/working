@@ -20,8 +20,8 @@ vet:
 
 # 初始化
 init:
-	go env -w GO111MODULE=on
-	go env -w GOPROXY=https://goproxy.cn,direct
+	go env  GO111MODULE=on
+	go env  GOPROXY=https://goproxy.cn,direct
 
 # 部署
 deploy:

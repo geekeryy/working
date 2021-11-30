@@ -1,16 +1,14 @@
 package data
 
 import (
-	"github.com/google/wire"
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"github.com/comeonjy/working/configs"
+	"github.com/google/wire"
 )
 
 var ProviderSet = wire.NewSet(NewData, NewWorkRepo)
 
 type Data struct {
-	Mongo *mongo.Collection
+
 }
 
 func NewData(cfg configs.Interface) *Data {
