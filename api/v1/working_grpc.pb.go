@@ -31,7 +31,7 @@ func NewWorkingClient(cc grpc.ClientConnInterface) WorkingClient {
 
 func (c *workingClient) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Result, error) {
 	out := new(Result)
-	err := c.cc.Invoke(ctx, "/task_system.scheduler.v1.Working/Ping", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/working.v1.Working/Ping", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func _Working_Ping_Handler(srv interface{}, ctx context.Context, dec func(interf
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/task_system.scheduler.v1.Working/Ping",
+		FullMethod: "/working.v1.Working/Ping",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(WorkingServer).Ping(ctx, req.(*Empty))
@@ -88,7 +88,7 @@ func _Working_Ping_Handler(srv interface{}, ctx context.Context, dec func(interf
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Working_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "task_system.scheduler.v1.Working",
+	ServiceName: "working.v1.Working",
 	HandlerType: (*WorkingServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
