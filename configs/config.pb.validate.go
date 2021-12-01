@@ -72,6 +72,8 @@ func (m *Config) Validate() error {
 
 	// no validation rules for ApmUrl
 
+	// no validation rules for AccountGrpc
+
 	return nil
 }
 

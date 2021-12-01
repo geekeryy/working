@@ -30,4 +30,7 @@ message Config {
   string apm_url = 6 [
     (gogoproto.jsontag) = "apm_url"
   ];
+  string account_grpc = 7 [
+    (gogoproto.jsontag) = "account_grpc"
+  ];
 }
