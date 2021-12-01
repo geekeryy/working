@@ -112,11 +112,13 @@ func (svc *WorkingService) ApolloEvent(w http.ResponseWriter, r *http.Request, p
 	switch appId {
 	case "account":
 		_, err = svc.rcAccountSvc.ReloadConfig(r.Context(), &reloadconfig.Empty{})
+	case "working":
+		err = svc.conf.ReloadConfig()
 	}
 
-	if  err != nil {
+	if err != nil {
 		log.Println(fmt.Sprintf("%s:%s err:%s", env, appId, err.Error()))
-	}else{
+	} else {
 		log.Println(fmt.Sprintf("%s:%s success", env, appId))
 	}
 }
