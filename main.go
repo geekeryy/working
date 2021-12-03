@@ -13,8 +13,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Run: func(c *cobra.Command, args []string) {
-		xenv.Init(consts.AppName,consts.EnvMap)
-		logger := xlog.New(xlog.WithTrace(consts.TraceName))
+		xenv.Init(consts.EnvMap)
+		logger := xlog.New(xlog.WithTrace(xenv.GetEnv(xenv.TraceName)))
 		ctx, cancel := context.WithCancel(context.Background())
 		app := cmd.InitApp(ctx, logger)
 		if err := app.Run(cancel); err != nil {

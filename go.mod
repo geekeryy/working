@@ -3,7 +3,7 @@ module github.com/comeonjy/working
 go 1.17
 
 require (
-	github.com/comeonjy/go-kit v0.0.3
+	github.com/comeonjy/go-kit v0.0.4-0.20211203092655-4eb3fb4690ec
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/wire v0.5.0

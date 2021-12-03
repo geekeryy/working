@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/comeonjy/go-kit/pkg/xenv"
 	"github.com/comeonjy/go-kit/pkg/xlog"
 	"github.com/comeonjy/go-kit/pkg/xmiddleware"
 	"github.com/comeonjy/working/api/v1"
 	"github.com/comeonjy/working/configs"
 	"github.com/comeonjy/working/internal/service"
-	"github.com/comeonjy/working/pkg/consts"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 )
@@ -19,7 +19,7 @@ func NewHttpServer(ctx context.Context, conf configs.Interface, logger *xlog.Log
 	mux := runtime.NewServeMux(runtime.WithErrorHandler(xmiddleware.HttpErrorHandler(logger)))
 	server := http.Server{
 		Addr:              conf.Get().HttpAddr,
-		Handler:           xmiddleware.HttpUse(mux, xmiddleware.HttpLogger(consts.TraceName, logger)),
+		Handler:           xmiddleware.HttpUse(mux, xmiddleware.HttpLogger(xenv.GetEnv(xenv.TraceName), logger)),
 		ReadHeaderTimeout: 2 * time.Second,
 		WriteTimeout:      2 * time.Second,
 	}

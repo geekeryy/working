@@ -1,30 +1,14 @@
 package consts
 
-const (
-	AppName    = "working"
-	AppVersion = "v1.0"
-
-	TraceName = "trace_id" // trace名
-)
-
-// apollo 配置
-const (
-	ApolloAppID     = "working"
-	ApolloCluster   = "default"
-	ApolloNamespace = "application"
-)
-
-// 环境变量名
-const (
-	AppEnv       = "APP_ENV"
-	ApolloUrl    = "APOLLO_URL"
-	ApolloSecret = "APOLLO_ACCESS_KEY_SECRET"
-	ConfigFile   = "CONFIG_FILE"
+import (
+	"github.com/comeonjy/go-kit/pkg/xenv"
 )
 
 var EnvMap = map[string]string{
-	AppEnv:       "dev",
-	ApolloUrl:    "http://apollo.dev.jiangyang.me",
-	ApolloSecret: "",
-	ConfigFile:   "./configs/config.yaml",
+	xenv.AppName:     "working",
+	xenv.AppVersion:  "v1.0",
+	xenv.TraceName:   "trace_id",
+	xenv.ApolloAppID: "working",
+	xenv.ApolloUrl:   "http://apollo.dev.jiangyang.me",
+	"my_const":       "my_const_value",
 }

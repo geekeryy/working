@@ -13,7 +13,6 @@ import (
 	"github.com/comeonjy/working/api/v1"
 	"github.com/comeonjy/working/configs"
 	"github.com/comeonjy/working/internal/service"
-	"github.com/comeonjy/working/pkg/consts"
 )
 
 var ProviderSet = wire.NewSet(NewGrpcServer, NewHttpServer)
@@ -22,7 +21,7 @@ func NewGrpcServer(srv *service.WorkingService, conf configs.Interface,logger *x
 	server := grpc.NewServer(
 		grpc.ConnectionTimeout(2*time.Second),
 		grpc.ChainUnaryInterceptor(
-			xmiddleware.GrpcLogger(consts.TraceName,logger), xmiddleware.GrpcValidate, xmiddleware.GrpcRecover(logger), xmiddleware.GrpcAuth, xmiddleware.GrpcApm(conf.Get().ApmUrl, consts.AppName, consts.AppVersion, xenv.GetEnv(consts.AppEnv))),
+			xmiddleware.GrpcLogger(xenv.GetEnv(xenv.TraceName),logger), xmiddleware.GrpcValidate, xmiddleware.GrpcRecover(logger), xmiddleware.GrpcAuth, xmiddleware.GrpcApm(conf.Get().ApmUrl, xenv.GetEnv(xenv.AppName), xenv.GetEnv(xenv.AppVersion), xenv.GetEnv(xenv.AppEnv))),
 	)
 	v1.RegisterWorkingServer(server, srv)
 	reloadconfig.RegisterReloadConfigServer(server,reloadconfig.NewServer(conf))
