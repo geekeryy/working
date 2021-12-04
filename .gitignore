@@ -1,3 +1,6 @@
 .idea
 .DS_Store
 *.make
+working
+main
+dlv

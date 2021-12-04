@@ -25,7 +25,7 @@ type App struct {
 	conf configs.Interface
 }
 
-func newApp( ctx context.Context,grpc *grpc.Server, http *http.Server, conf configs.Interface) *App {
+func newApp(ctx context.Context, grpc *grpc.Server, http *http.Server, conf configs.Interface) *App {
 	return &App{
 		grpc: grpc,
 		http: http,
@@ -70,20 +70,20 @@ func (app *App) runHttp() error {
 }
 
 func (app *App) runGrpc() error {
-	listen, err := net.Listen("tcp", app.conf.Get().GrpcAddr)
+	listen, err := net.Listen("tcp", ":"+xenv.GetEnv(xenv.GrpcPort))
 	if err != nil {
 		return err
 	}
 
-	log.Printf("grpc run success in %s \n", app.conf.Get().GrpcAddr)
+	log.Printf("grpc run success in %s \n", listen.Addr().String())
 	return app.grpc.Serve(listen)
 }
 
 func (app *App) runPprof() error {
 	s := http.Server{
-		Addr:    app.conf.Get().PprofAddr,
+		Addr:    ":" + xenv.GetEnv(xenv.PprofPort),
 		Handler: http.DefaultServeMux,
 	}
-	log.Printf("pprof run success in %s \n", app.conf.Get().PprofAddr)
+	log.Printf("pprof run success in %s \n", s.Addr)
 	return s.ListenAndServe()
 }

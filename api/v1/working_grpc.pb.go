@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WorkingClient interface {
 	Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Result, error)
+	K8S(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Result, error)
 }
 
 type workingClient struct {
@@ -38,11 +39,21 @@ func (c *workingClient) Ping(ctx context.Context, in *Empty, opts ...grpc.CallOp
 	return out, nil
 }
 
+func (c *workingClient) K8S(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Result, error) {
+	out := new(Result)
+	err := c.cc.Invoke(ctx, "/working.v1.Working/K8S", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // WorkingServer is the server API for Working service.
 // All implementations must embed UnimplementedWorkingServer
 // for forward compatibility
 type WorkingServer interface {
 	Ping(context.Context, *Empty) (*Result, error)
+	K8S(context.Context, *Empty) (*Result, error)
 	mustEmbedUnimplementedWorkingServer()
 }
 
@@ -52,6 +63,9 @@ type UnimplementedWorkingServer struct {
 
 func (UnimplementedWorkingServer) Ping(context.Context, *Empty) (*Result, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedWorkingServer) K8S(context.Context, *Empty) (*Result, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method K8S not implemented")
 }
 func (UnimplementedWorkingServer) mustEmbedUnimplementedWorkingServer() {}
 
@@ -84,6 +98,24 @@ func _Working_Ping_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Working_K8S_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkingServer).K8S(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/working.v1.Working/K8S",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkingServer).K8S(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Working_ServiceDesc is the grpc.ServiceDesc for Working service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -94,6 +126,10 @@ var Working_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _Working_Ping_Handler,
+		},
+		{
+			MethodName: "K8S",
+			Handler:    _Working_K8S_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

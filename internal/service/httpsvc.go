@@ -15,11 +15,10 @@ import (
 
 	"github.com/comeonjy/go-kit/grpc/reloadconfig"
 	"github.com/comeonjy/go-kit/pkg/util"
+	"github.com/comeonjy/working/pkg/consts"
 	"github.com/comeonjy/working/pkg/notify"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 )
 
@@ -52,8 +51,8 @@ func (svc *WorkingService) GithubEvent(w http.ResponseWriter, r *http.Request, p
 	}
 
 	tag := submatch[1]
-	image := fmt.Sprintf("ccr.ccs.tencentyun.com/comeonjy/%s:%s", resp.Repository.Name, tag)
-	if err := RestartDeploy(resp.Repository.Name, image); err != nil {
+	image := fmt.Sprintf("%s/%s:%s",consts.EnvMap["images_repo"], resp.Repository.Name, tag)
+	if err := svc.restartDeploy(resp.Repository.Name, image); err != nil {
 		log.Println("RestartDeploy err", err.Error())
 		_ = notify.PostFieShu("RestartDeploy err: " + err.Error())
 	} else {
@@ -61,22 +60,13 @@ func (svc *WorkingService) GithubEvent(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
-func RestartDeploy(name string, image string) error {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return err
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
+func (svc *WorkingService) restartDeploy(name string, image string) error {
 	log.Println("Updated deployment start...")
-	deploymentsClient := clientset.AppsV1().Deployments(apiv1.NamespaceDefault)
+	deploymentsClient := svc.k8sClient.AppsV1().Deployments(apiv1.NamespaceDefault)
 	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		result, getErr := deploymentsClient.Get(context.TODO(), name, metav1.GetOptions{})
 		if getErr != nil {
-			return err
+			return getErr
 		}
 		result.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().String()
 		result.Spec.Template.Spec.Containers[0].Image = image

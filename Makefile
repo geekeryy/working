@@ -23,7 +23,7 @@ init:
 	go env  GO111MODULE=on
 	go env  GOPROXY=https://goproxy.cn,direct
 
-# 部署
+# 部署到k8s
 deploy:
 	GOOS=linux GOARCH=amd64 go build -o main ./main.go
 	docker build -t $(IMAGES_REPO)/$(SERVER_NAME):$(IMAGE_TAG) .
@@ -33,12 +33,27 @@ deploy:
 	git commit --allow-empty -am "deploy:$(IMAGE_TAG)"
 	git push
 
-
-
 # 本地docker部署
 docker:
-	docker stop go-layout  & > /dev/null
+	docker stop $(SERVER_NAME)  & > /dev/null
 	GOOS=linux GOARCH=amd64 go build -o main ./main.go
 	docker build -t $(SERVER_NAME):$(IMAGE_TAG) .
 	rm main
 	docker run --rm -p 8080:8080 -p 8081:8081 -p 6060:6060 -d --name $(SERVER_NAME)  $(SERVER_NAME):$(IMAGE_TAG)
+
+# dlv 远程k8s调试
+k8s-dlv:
+	GOOS=linux GOARCH=amd64 go build -gcflags="all=-N -l" -o main ./main.go
+	docker build -t $(IMAGES_REPO)/$(SERVER_NAME):dlv -f dlv.Dockerfile .
+	rm main
+	echo "$(DOCKER_PSW)" | docker login --username=$(DOCKER_USR) $(REPO_DOMAIN) --password-stdin
+	docker push $(IMAGES_REPO)/$(SERVER_NAME):dlv
+	kubectl rollout restart deploy $(SERVER_NAME)-dlv
+
+# dlv 本地docker调试
+local-dlv:
+	GOOS=linux GOARCH=amd64 go build -gcflags="all=-N -l" -o main ./main.go
+	docker build -t $(IMAGES_REPO)/$(SERVER_NAME):dlv -f dlv.Dockerfile .
+	rm main
+	-docker stop $(SERVER_NAME)-dlv
+	docker run --rm -d --name $(SERVER_NAME)-dlv -e APOLLO_ACCESS_KEY_SECRET_WORKING=$(APOLLO_ACCESS_KEY_SECRET_WORKING) -p 8080:8080 -p 8081:8081 -p 6060:6060 -p 12345:2345 -v /Users/jiangyang/.kube:/Users/jiangyang/.kube  $(IMAGES_REPO)/$(SERVER_NAME):dlv
