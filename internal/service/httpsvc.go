@@ -15,8 +15,10 @@ import (
 
 	"github.com/comeonjy/go-kit/grpc/reloadconfig"
 	"github.com/comeonjy/go-kit/pkg/util"
+	"github.com/comeonjy/go-kit/pkg/xenv"
 	"github.com/comeonjy/working/pkg/consts"
 	"github.com/comeonjy/working/pkg/notify"
+	"google.golang.org/grpc"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/util/retry"
@@ -51,7 +53,7 @@ func (svc *WorkingService) GithubEvent(w http.ResponseWriter, r *http.Request, p
 	}
 
 	tag := submatch[1]
-	image := fmt.Sprintf("%s/%s:%s",consts.EnvMap["images_repo"], resp.Repository.Name, tag)
+	image := fmt.Sprintf("%s/%s:%s", consts.EnvMap["images_repo"], resp.Repository.Name, tag)
 	if err := svc.restartDeploy(resp.Repository.Name, image); err != nil {
 		log.Println("RestartDeploy err", err.Error())
 		_ = notify.PostFieShu("RestartDeploy err: " + err.Error())
@@ -62,19 +64,23 @@ func (svc *WorkingService) GithubEvent(w http.ResponseWriter, r *http.Request, p
 
 func (svc *WorkingService) restartDeploy(name string, image string) error {
 	log.Println("Updated deployment start...")
-	deploymentsClient := svc.k8sClient.AppsV1().Deployments(apiv1.NamespaceDefault)
-	retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		result, getErr := deploymentsClient.Get(context.TODO(), name, metav1.GetOptions{})
-		if getErr != nil {
-			return getErr
-		}
-		result.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().String()
-		result.Spec.Template.Spec.Containers[0].Image = image
-		_, updateErr := deploymentsClient.Update(context.TODO(), result, metav1.UpdateOptions{})
-		return updateErr
+	deployments, err := svc.k8sClient.AppsV1().Deployments(apiv1.NamespaceDefault).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "githubRepoName=" + name,
 	})
-	if retryErr != nil {
-		return retryErr
+	if err != nil {
+		return err
+	}
+	for _, result := range deployments.Items {
+		if retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			result.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().String()
+			result.Spec.Template.Spec.Containers[0].Image = image
+			_, updateErr := svc.k8sClient.AppsV1().Deployments(apiv1.NamespaceDefault).Update(context.TODO(), &result, metav1.UpdateOptions{})
+			return updateErr
+		}); retryErr != nil {
+			log.Println(retryErr)
+			continue
+		}
+		log.Println("restartDeploy:",result.Name)
 	}
 	log.Println("Updated deployment end...")
 
@@ -99,11 +105,37 @@ func (svc *WorkingService) ApolloEvent(w http.ResponseWriter, r *http.Request, p
 
 	log.Println(env, appId)
 
-	switch appId {
-	case "account":
-		_, err = svc.rcAccountSvc.ReloadConfig(r.Context(), &reloadconfig.Empty{})
-	case "working":
-		err = svc.conf.ReloadConfig()
+	if xenv.GetApolloCluster("") != resp.ClusterName {
+		log.Println("ClusterName:", resp.ClusterName, "!=", xenv.GetApolloCluster(""))
+		return
+	}
+
+	list, err := svc.k8sClient.CoreV1().Pods(apiv1.NamespaceDefault).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "apolloAppId=" + appId,
+	})
+	if err != nil {
+		log.Println("K8s List err:", err)
+		return
+	}
+
+	ipMap := make(map[string]struct{})
+	for _, v := range list.Items {
+		ipMap[v.Status.PodIP] = struct{}{}
+	}
+
+	log.Println("ipMap:", ipMap)
+
+	for ip := range ipMap {
+		dial, err := grpc.Dial(ip+":"+xenv.GetEnv(xenv.GrpcPort), grpc.WithInsecure())
+		if err != nil {
+			log.Println("grpc.Dial err", ip, err)
+			continue
+		}
+		_, err = reloadconfig.NewReloadConfigClient(dial).ReloadConfig(context.Background(), &reloadconfig.Empty{})
+		if err != nil {
+			log.Println("NewReloadConfigClient.ReloadConfig err", ip, err)
+			return
+		}
 	}
 
 	if err != nil {

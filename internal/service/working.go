@@ -14,16 +14,7 @@ import (
 func (svc *WorkingService) K8S(ctx context.Context,in *v1.Empty) (*v1.Result, error) {
 
 	list, err := svc.k8sClient.CoreV1().Pods("default").List(ctx, metav1.ListOptions{
-		TypeMeta:             metav1.TypeMeta{},
 		LabelSelector:        "app=account",
-		FieldSelector:        "",
-		Watch:                false,
-		AllowWatchBookmarks:  false,
-		ResourceVersion:      "",
-		ResourceVersionMatch: "",
-		TimeoutSeconds:       nil,
-		Limit:                0,
-		Continue:             "",
 	})
 	if err != nil {
 		return nil, err

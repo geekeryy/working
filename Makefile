@@ -33,6 +33,15 @@ deploy:
 	git commit --allow-empty -am "deploy:$(IMAGE_TAG)"
 	git push
 
+# 部署到k8s 不提交
+update:
+	GOOS=linux GOARCH=amd64 go build -o main ./main.go
+	docker build -t $(IMAGES_REPO)/$(SERVER_NAME):$(IMAGE_TAG) .
+	rm main
+	echo "$(DOCKER_PSW)" | docker login --username=$(DOCKER_USR) $(REPO_DOMAIN) --password-stdin
+	docker push $(IMAGES_REPO)/$(SERVER_NAME):$(IMAGE_TAG)
+	kubectl rollout restart deploy $(SERVER_NAME)
+
 # 本地docker部署
 docker:
 	docker stop $(SERVER_NAME)  & > /dev/null
