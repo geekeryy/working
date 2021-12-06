@@ -72,7 +72,13 @@ func (svc *WorkingService) restartDeploy(name string, image string) error {
 	}
 	for _, result := range deployments.Items {
 		if retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			result.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().String()
+			if result.Spec.Template.ObjectMeta.Annotations == nil {
+				result.Spec.Template.ObjectMeta.Annotations = map[string]string{
+					"kubectl.kubernetes.io/restartedAt": time.Now().String(),
+				}
+			} else {
+				result.Spec.Template.ObjectMeta.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().String()
+			}
 			result.Spec.Template.Spec.Containers[0].Image = image
 			_, updateErr := svc.k8sClient.AppsV1().Deployments(apiv1.NamespaceDefault).Update(context.TODO(), &result, metav1.UpdateOptions{})
 			return updateErr
@@ -80,7 +86,7 @@ func (svc *WorkingService) restartDeploy(name string, image string) error {
 			log.Println(retryErr)
 			continue
 		}
-		log.Println("restartDeploy:",result.Name)
+		log.Println("restartDeploy:", result.Name)
 	}
 	log.Println("Updated deployment end...")
 
