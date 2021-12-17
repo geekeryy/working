@@ -46,7 +46,7 @@ import "github.com/comeonjy/go-kit/grpc/reloadconfig"
     
 reloadconfig.RegisterReloadConfigServer(server, reloadconfig.NewServer(conf))
 ```
-   
+
 2. deployment.yaml 添加labels: apolloAppId={Apollo配置中心的AppId}
 
     Example:

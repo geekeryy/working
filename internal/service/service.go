@@ -6,14 +6,13 @@ import (
 
 	"github.com/comeonjy/go-kit/pkg/xerror"
 	"github.com/comeonjy/working/pkg/consts"
-	"github.com/comeonjy/working/pkg/errcode"
 	"github.com/comeonjy/working/pkg/k8s"
 	"github.com/google/wire"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"k8s.io/client-go/kubernetes"
 
-	reloadconfig "github.com/comeonjy/go-kit/grpc/reloadconfig"
+	"github.com/comeonjy/go-kit/grpc/reloadconfig"
 	"github.com/comeonjy/go-kit/pkg/xlog"
 	v1 "github.com/comeonjy/working/api/v1"
 	"github.com/comeonjy/working/configs"
@@ -61,7 +60,7 @@ func (svc *WorkingService) AuthFuncOverride(ctx context.Context, fullMethodName 
 func (svc *WorkingService) Ping(ctx context.Context, in *v1.Empty) (*v1.Result, error) {
 	accountDial, err := grpc.Dial(svc.conf.Get().AccountGrpc, grpc.WithInsecure())
 	if err != nil {
-		return &v1.Result{}, xerror.NewError(errcode.SystemErr, "", err.Error())
+		return &v1.Result{}, xerror.NewError(xerror.SystemErr, "", err.Error())
 	}
 
 	rc := reloadconfig.NewReloadConfigClient(accountDial)
