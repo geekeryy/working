@@ -13,6 +13,17 @@ import (
 
 var ProviderSet = wire.NewSet(NewConfig)
 
+type Config struct {
+	Mode        string `json:"mode"`
+	MysqlConf   string `json:"mysql_conf"`
+	ApmUrl      string `json:"apm_url"`
+	AccountGrpc string `json:"account_grpc"`
+}
+
+func (c *Config) Validate() error {
+	return nil
+}
+
 // Interface 对外暴露接口（用于功能扩展）
 type Interface interface {
 	Get() Config
@@ -37,7 +48,9 @@ func storeHandler(data []byte) interface{} {
 	conf := Config{}
 	if err := json.Unmarshal(data, &conf); err != nil {
 		log.Println(err)
-		return nil
+	}
+	if err := conf.Validate(); err != nil {
+		log.Println(err)
 	}
 	return conf
 }
@@ -46,11 +59,8 @@ func storeHandler(data []byte) interface{} {
 func NewConfig(ctx context.Context) Interface {
 	cfg := &config{
 		xconfig.New(ctx,
-			apollo.NewSource(xenv.GetEnv(xenv.ApolloUrl), xenv.GetEnv(xenv.ApolloAppID), xenv.GetApolloCluster("default"), xenv.GetApolloSecret(), xenv.GetApolloNamespace("grpc"),xenv.GetApolloNamespace("common")),
+			apollo.NewSource(xenv.GetEnv(xenv.ApolloUrl), xenv.GetEnv(xenv.ApolloAppID), xenv.GetApolloCluster("default"), xenv.GetApolloSecret(), xenv.GetApolloNamespace("grpc"), xenv.GetApolloNamespace("common")),
 			storeHandler),
-	}
-	if err := cfg.ReLoad(); err != nil {
-		panic(err)
 	}
 	return cfg
 }
