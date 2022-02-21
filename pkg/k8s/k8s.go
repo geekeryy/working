@@ -16,12 +16,18 @@ func NewClient(kubeConfig string) (*kubernetes.Clientset, error) {
 	if xenv.IsLocal() {
 		config, err = clientcmd.BuildConfigFromFlags("", kubeConfig)
 		if err != nil {
-			return nil, err
+			config, err = rest.InClusterConfig()
+			if err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		config, err = rest.InClusterConfig()
 		if err != nil {
-			return nil, err
+			config, err = clientcmd.BuildConfigFromFlags("", kubeConfig)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

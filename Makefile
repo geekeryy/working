@@ -59,10 +59,7 @@ k8s-dlv:
 	docker push $(IMAGES_REPO)/$(SERVER_NAME):dlv
 	kubectl rollout restart deploy $(SERVER_NAME)-dlv
 
-# dlv 本地docker调试
-local-dlv:
-	-docker stop $(SERVER_NAME)-dlv
-	GOOS=linux GOARCH=amd64 go build -gcflags="all=-N -l" -o main ./main.go
-	docker build -t $(IMAGES_REPO)/$(SERVER_NAME):dlv -f dlv.Dockerfile .
-	rm main
-	docker run --rm -d --name $(SERVER_NAME)-dlv -e APOLLO_ACCESS_KEY_SECRET_WORKING=$(APOLLO_ACCESS_KEY_SECRET_WORKING) -p 8080:8080 -p 8081:8081 -p 6060:6060 -p 12345:2345 -v /Users/jiangyang/.kube:/Users/jiangyang/.kube  $(IMAGES_REPO)/$(SERVER_NAME):dlv
+debug-dev:export APP_ENV=dev
+debug-dev:
+	go build -gcflags "all=-N -l" main.go
+	dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./main

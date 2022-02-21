@@ -83,6 +83,8 @@ github.com/comeonjy/go-kit v0.0.5 h1:m43oJZPhSn1jYr+sLzfxLYyoK2ZJQZByRl2J00lAVsw
 github.com/comeonjy/go-kit v0.0.5/go.mod h1:cGTBfRwATkvdJedtCgVFKi1dsm/swvb7Vm2MhVDyVFg=
 github.com/comeonjy/go-kit v0.0.6-0.20211217101337-f1a59188ee76 h1:JxDU0T73V5+ZWm6eCu1w7u33miYjodT/Xg84ofp5GVY=
 github.com/comeonjy/go-kit v0.0.6-0.20211217101337-f1a59188ee76/go.mod h1:a6GSOSd6AHz+wuk/LteJCc+kjm7sIeZjVmao9v2ob38=
+github.com/comeonjy/go-kit v0.0.6-0.20220221063528-e0257b4806d7 h1:U0yY1Zz5KiqPnNvBCpWSXTkvpl+phat993sTvHuafJ8=
+github.com/comeonjy/go-kit v0.0.6-0.20220221063528-e0257b4806d7/go.mod h1:AJEEzB2srSqedlMAHjENGpCFgk/Tk3qC4uZaZ4jVYCs=
 github.com/coreos/go-semver v0.3.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-systemd/v22 v22.3.2/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/cpuguy83/go-md2man/v2 v2.0.0/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
