@@ -5,10 +5,6 @@ type WorkModel struct {
 	Url string `json:"url"`
 }
 
-type WorkRepo interface {
-	Get(id int) (*WorkModel, error)
-}
-
 func NewWorkRepo(data *Data) WorkRepo {
 	return &workRepo{data: data}
 }

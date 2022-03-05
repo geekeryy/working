@@ -14,3 +14,8 @@ type Data struct {
 func NewData(cfg configs.Interface) *Data {
 	return &Data{}
 }
+
+
+type WorkRepo interface {
+	Get(id int) (*WorkModel, error)
+}
