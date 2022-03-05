@@ -29,7 +29,7 @@ type WorkingService struct {
 	workRepo     data.WorkRepo
 	rcAccountSvc reloadconfig.ReloadConfigClient
 	k8sClient    *kubernetes.Clientset
-	accountConn *grpc.ClientConn
+	accountConn  *grpc.ClientConn
 }
 
 func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo data.WorkRepo) *WorkingService {
@@ -40,13 +40,11 @@ func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo dat
 	}
 	resolver.Register(kuberesolver.NewBuilder(nil, "kubernetes"))
 
-	accountDial, err := grpc.Dial("kubernetes:///"+conf.Get().AccountGrpc, grpc.WithInsecure())
+	accountDial, err := grpc.Dial("kubernetes:///"+conf.Get().AccountGrpc, grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`), grpc.WithInsecure())
 
 	if err != nil {
 		panic(err)
 	}
-
-
 
 	return &WorkingService{
 		conf:         conf,
@@ -54,7 +52,7 @@ func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo dat
 		logger:       logger,
 		rcAccountSvc: reloadconfig.NewReloadConfigClient(accountDial),
 		k8sClient:    client,
-		accountConn: accountDial,
+		accountConn:  accountDial,
 	}
 }
 
