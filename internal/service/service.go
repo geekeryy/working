@@ -4,12 +4,13 @@ import (
 	"context"
 	"log"
 
-	"github.com/comeonjy/go-kit/pkg/xerror"
 	"github.com/comeonjy/working/pkg/consts"
 	"github.com/comeonjy/working/pkg/k8s"
 	"github.com/google/wire"
+	"github.com/sercand/kuberesolver/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/resolver"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/comeonjy/go-kit/grpc/reloadconfig"
@@ -28,18 +29,24 @@ type WorkingService struct {
 	workRepo     data.WorkRepo
 	rcAccountSvc reloadconfig.ReloadConfigClient
 	k8sClient    *kubernetes.Clientset
+	accountConn *grpc.ClientConn
 }
 
 func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo data.WorkRepo) *WorkingService {
-	accountDial, err := grpc.Dial(conf.Get().AccountGrpc, grpc.WithInsecure())
-	if err != nil {
-		panic(err)
-	}
 
 	client, err := k8s.NewClient(consts.EnvMap["kube_config"])
 	if err != nil {
 		panic(err)
 	}
+	resolver.Register(kuberesolver.NewBuilder(nil, "kubernetes"))
+
+	accountDial, err := grpc.Dial("kubernetes:///"+conf.Get().AccountGrpc, grpc.WithInsecure())
+
+	if err != nil {
+		panic(err)
+	}
+
+
 
 	return &WorkingService{
 		conf:         conf,
@@ -47,6 +54,7 @@ func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo dat
 		logger:       logger,
 		rcAccountSvc: reloadconfig.NewReloadConfigClient(accountDial),
 		k8sClient:    client,
+		accountConn: accountDial,
 	}
 }
 
@@ -58,13 +66,8 @@ func (svc *WorkingService) AuthFuncOverride(ctx context.Context, fullMethodName 
 }
 
 func (svc *WorkingService) Ping(ctx context.Context, in *v1.Empty) (*v1.Result, error) {
-	accountDial, err := grpc.Dial(svc.conf.Get().AccountGrpc, grpc.WithInsecure())
-	if err != nil {
-		return &v1.Result{}, xerror.NewError(xerror.SystemErr, "", err.Error())
-	}
-
-	rc := reloadconfig.NewReloadConfigClient(accountDial)
-	if _, err = rc.ReloadConfig(ctx, &reloadconfig.Empty{}); err != nil {
+	rc := reloadconfig.NewReloadConfigClient(svc.accountConn)
+	if _, err := rc.ReloadConfig(ctx, &reloadconfig.Empty{}); err != nil {
 		log.Println("ReloadConfig", err.Error())
 	}
 

@@ -19,6 +19,8 @@ require (
 
 require (
 	github.com/armon/go-radix v1.0.0 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/go-licenser v0.3.1 // indirect
 	github.com/elastic/go-sysinfo v1.1.1 // indirect
@@ -34,11 +36,16 @@ require (
 	github.com/jcchavezs/porto v0.1.0 // indirect
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prometheus/client_golang v1.7.1 // indirect
+	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.10.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
+	github.com/sercand/kuberesolver/v3 v3.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/thedevsaddam/gojsonq/v2 v2.5.2 // indirect
 	go.elastic.co/apm v1.14.0 // indirect
