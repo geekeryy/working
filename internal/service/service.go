@@ -6,11 +6,10 @@ import (
 
 	"github.com/comeonjy/working/pkg/consts"
 	"github.com/comeonjy/working/pkg/k8s"
+	"github.com/comeonjy/working/pkg/xgrpc"
 	"github.com/google/wire"
-	"github.com/sercand/kuberesolver/v3"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/resolver"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/comeonjy/go-kit/grpc/reloadconfig"
@@ -38,10 +37,8 @@ func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo dat
 	if err != nil {
 		panic(err)
 	}
-	resolver.Register(kuberesolver.NewBuilder(nil, "kubernetes"))
 
-	accountDial, err := grpc.Dial("kubernetes:///"+conf.Get().AccountGrpc, grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`), grpc.WithInsecure())
-
+	accountDial, err := xgrpc.DialContext(context.Background(), conf.Get().AccountGrpc)
 	if err != nil {
 		panic(err)
 	}
