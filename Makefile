@@ -65,3 +65,8 @@ debug-dev:export APP_ENV=dev
 debug-dev:
 	go build -gcflags "all=-N -l" main.go
 	dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./main
+
+# 拦截k8s流量到本地
+intercept:
+	telepresence quit -u && telepresence connect
+	telepresence intercept $(SERVER_NAME) --http-header=who=jiangyang -n default
