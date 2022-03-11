@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/comeonjy/working/pkg/consts"
 	"github.com/comeonjy/working/pkg/k8s"
 	"github.com/comeonjy/working/pkg/xgrpc"
 	"github.com/google/wire"
@@ -33,7 +32,7 @@ type WorkingService struct {
 
 func NewWorkingService(conf configs.Interface, logger *xlog.Logger, workRepo data.WorkRepo) *WorkingService {
 
-	client, err := k8s.NewClient(consts.EnvMap["kube_config"])
+	client, err := k8s.NewClient(conf.Get().KubeConfig)
 	if err != nil {
 		panic(err)
 	}
