@@ -16,7 +16,6 @@ import (
 	"github.com/comeonjy/go-kit/grpc/reloadconfig"
 	"github.com/comeonjy/go-kit/pkg/util"
 	"github.com/comeonjy/go-kit/pkg/xenv"
-	"github.com/comeonjy/working/pkg/consts"
 	"github.com/comeonjy/working/pkg/notify"
 	"google.golang.org/grpc"
 	apiv1 "k8s.io/api/core/v1"
@@ -53,7 +52,7 @@ func (svc *WorkingService) GithubEvent(w http.ResponseWriter, r *http.Request, p
 	}
 
 	tag := submatch[1]
-	image := fmt.Sprintf("%s/%s:%s", consts.EnvMap["images_repo"], resp.Repository.Name, tag)
+	image := fmt.Sprintf("%s/%s:%s", svc.conf.Get().ImagesRepo, resp.Repository.Name, tag)
 	if err := svc.restartDeploy(resp.Repository.Name, image); err != nil {
 		log.Println("RestartDeploy err", err.Error())
 		_ = notify.PostFieShu("RestartDeploy err: " + err.Error())

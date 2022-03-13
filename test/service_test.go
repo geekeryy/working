@@ -5,9 +5,10 @@ import (
 	"log"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/comeonjy/go-kit/grpc/reloadconfig"
-	"google.golang.org/grpc"
+	"github.com/comeonjy/working/pkg/xgrpc"
 )
 
 type A struct {
@@ -31,23 +32,29 @@ func (i *inner) Load() (val interface{}) {
 }
 
 func TestService_Ping(t *testing.T) {
-	a:=A{name: "a"}
-	i:=inner{}
+	a := A{name: "a"}
+	i := inner{}
 	i.Store(a)
 	a2 := i.Load().(A)
 	log.Println(a2.name)
 }
 
-
 func TestReloadConfig(t *testing.T) {
-	dial, err := grpc.Dial("localhost:8081", grpc.WithInsecure())
+	dial, err := xgrpc.DialContext(context.Background(), "account.default:8081")
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	client := reloadconfig.NewReloadConfigClient(dial)
-	_, err = client.ReloadConfig(context.TODO(), &reloadconfig.Empty{})
-	if err != nil {
-		t.Error(err)
-	}
+	t.Run("demo1", func(t *testing.T) {
+		for i := 0; i < 10; i++ {
+			_, err = client.ReloadConfig(context.TODO(), &reloadconfig.Empty{})
+			if err != nil {
+				t.Error(err)
+			}
+			time.Sleep(time.Second)
+		}
+
+	})
+
 }

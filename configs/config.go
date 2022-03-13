@@ -18,6 +18,8 @@ type Config struct {
 	MysqlConf   string `json:"mysql_conf"`
 	ApmUrl      string `json:"apm_url"`
 	AccountGrpc string `json:"account_grpc"`
+	KubeConfig  string `json:"kube_config"`
+	ImagesRepo  string `json:"images_repo"`
 }
 
 func (c *Config) Validate() error {
