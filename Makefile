@@ -66,6 +66,10 @@ debug-dev:
 	go build -gcflags "all=-N -l" main.go
 	dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./main
 
+# 更新依赖
+u:
+	go get github.com/comeonjy/go-kit@main
+
 # 拦截k8s流量到本地
 intercept:
 	telepresence quit -u && telepresence connect
