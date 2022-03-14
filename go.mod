@@ -3,7 +3,7 @@ module github.com/comeonjy/working
 go 1.17
 
 require (
-	github.com/comeonjy/go-kit v0.0.0-20220313154921-eeaf656fb39c
+	github.com/comeonjy/go-kit v0.0.6-0.20220314063925-7f74939f9e60
 	github.com/google/wire v0.5.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
 	github.com/spf13/cobra v1.2.1

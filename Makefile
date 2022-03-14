@@ -60,12 +60,6 @@ k8s-dlv:
 	docker push $(IMAGES_REPO)/$(SERVER_NAME):dlv
 	kubectl rollout restart deploy $(SERVER_NAME)-dlv
 
-# 本地调试
-debug-dev:export APP_ENV=dev
-debug-dev:
-	go build -gcflags "all=-N -l" main.go
-	dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./main
-
 # 更新依赖
 u:
 	go get github.com/comeonjy/go-kit@main
